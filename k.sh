@@ -11,14 +11,15 @@ k () {
   setopt local_options null_glob typeset_silent no_auto_pushd nomarkdirs
 
   # Process options and get files/directories
-  typeset -a o_all o_almost_all o_human o_si o_directory o_group_directories \
-	  o_no_directory o_no_vcs o_sort o_sort_reverse o_help
+  typeset -a o_all o_almost_all o_human o_si o_directory o_group o_group_directories \
+             o_no_directory o_no_vcs o_sort o_sort_reverse o_help
   zparseopts -E -D \
              a=o_all -all=o_all \
              A=o_almost_all -almost-all=o_almost_all \
              c=o_sort \
              d=o_directory -directory=o_directory \
-	     -group-directories-first=o_group_directories \
+             g=o_group -group=o_group \
+             -group-directories-first=o_group_directories \
              h=o_human -human=o_human \
              -si=o_si \
              n=o_no_directory -no-directory=o_no_directory \
@@ -36,23 +37,25 @@ k () {
   then
     print -u2 "Usage: k [options] DIR"
     print -u2 "Options:"
-    print -u2 "\t-a      --all           list entries starting with ."
-    print -u2 "\t-A      --almost-all    list all except . and .."
-    print -u2 "\t-c                      sort by ctime (inode change time)"
-    print -u2 "\t-d      --directory     list only directories"
-    print -u2 "\t-n      --no-directory  do not list directories"
-    print -u2 "\t-h      --human         show filesizes in human-readable format"
-    print -u2 "\t        --si            with -h, use powers of 1000 not 1024"
-    print -u2 "\t-r      --reverse       reverse sort order"
-    print -u2 "\t-S                      sort by size"
-    print -u2 "\t-t                      sort by time (modification time)"
-    print -u2 "\t-u                      sort by atime (use or access time)"
-    print -u2 "\t-U                      Unsorted"
-    print -u2 "\t        --sort WORD     sort by WORD: none (U), size (S),"
-    print -u2 "\t                        time (t), ctime or status (c),"
-    print -u2 "\t       		 atime or access or use (u)"
-    print -u2 "\t        --no-vcs        do not get VCS status (much faster)"
-    print -u2 "\t        --help          show this help"
+    print -u2 "\t-a      --all                       list entries starting with ."
+    print -u2 "\t-A      --almost-all                list all except . and .."
+    print -u2 "\t-c                                  sort by ctime (inode change time)"
+    print -u2 "\t-d      --directory                 list only directories"
+    print -u2 "\t-n      --no-directory              do not list directories"
+    print -u2 "\t-g      --group                     list each file's group"
+    print -u2 "\t-h      --human                     show filesizes in human-readable format"
+    print -u2 "\t        --si                        with -h, use powers of 1000 not 1024"
+    print -u2 "\t-r      --reverse                   reverse sort order"
+    print -u2 "\t-S                                  sort by size"
+    print -u2 "\t-t                                  sort by time (modification time)"
+    print -u2 "\t-u                                  sort by atime (use or access time)"
+    print -u2 "\t-U                                  Unsorted"
+    print -u2 "\t        --group-directories-first   list directories before other files"
+    print -u2 "\t        --sort WORD                 sort by WORD: none (U), size (S),"
+    print -u2 "\t                                    time (t), ctime or status (c),"
+    print -u2 "\t                                    atime or access or use (u)"
+    print -u2 "\t        --no-vcs                    do not get VCS status (much faster)"
+    print -u2 "\t        --help                      show this help"
     return 1
   fi
 
@@ -328,6 +331,7 @@ k () {
 
     typeset REPOMARKER
     typeset REPOBRANCH
+    typeset OWNERGROUP
     typeset PERMISSIONS HARDLINKCOUNT OWNER GROUP FILESIZE FILESIZE_OUT DATE NAME SYMLINK_TARGET
     typeset FILETYPE PER1 PER2 PER3 PERMISSIONS_OUTPUT STATUS
     typeset TIME_DIFF TIME_COLOR DATE_OUTPUT
@@ -551,9 +555,16 @@ k () {
       if [[ $SYMLINK_TARGET != "" ]]; then SYMLINK_TARGET=" -> ${SYMLINK_TARGET//$'\e'/\\e}"; fi
 
       # --------------------------------------------------------------------------
+      # Format OWNER/GROUP
+      # --------------------------------------------------------------------------
+
+      OWNERGROUP="$OWNER"
+      if [[ "$o_group" != "" ]]; then OWNERGROUP+=" $GROUP"; fi
+
+      # --------------------------------------------------------------------------
       # Display final result
       # --------------------------------------------------------------------------
-      print -r -- "$PERMISSIONS_OUTPUT $HARDLINKCOUNT $OWNER $GROUP $FILESIZE_OUT $DATE_OUTPUT $REPOMARKER $NAME$SYMLINK_TARGET $REPOBRANCH"
+      print -r -- "$PERMISSIONS_OUTPUT $HARDLINKCOUNT $OWNERGROUP $FILESIZE_OUT $DATE_OUTPUT $REPOMARKER $NAME$SYMLINK_TARGET $REPOBRANCH"
 
       k=$((k+1)) # Bump loop index
     done
